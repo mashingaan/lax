@@ -128,7 +128,7 @@ export function createJobsClient(options: JobsClientOptions = {}): JobsClient {
   }
   const badResponse = (status: number): never => { throw new LaxJobsError('Registry returned an invalid response envelope', status, 'invalid_response') }
   return {
-    async listJobs(filter = {}) {
+    async listJobs(filter: JobsFilter = {}) {
       if (!record(filter)) invalid('filter must be an object')
       const query = new URLSearchParams()
       if (filter.track !== undefined) {
