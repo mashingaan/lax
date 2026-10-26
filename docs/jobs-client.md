@@ -25,3 +25,9 @@ Run `npm ci`, `npm test`, `npm run typecheck`. A1-A6 and error/timeout tests are
 - Original upstream Apache-2.0 license and attribution are preserved. The job's generic MIT wording conflicts with the existing package license. Confirm licensing with Kognai in PACT rather than silently relicense upstream code.
 
 Hidden-test risk remains around unspecified strictness of response validation, malformed inputs outside the typed API and future schema changes. There is no claim that unseen tests or a future PACT have passed.
+
+## Adversarial checks
+
+An error status already received from the registry retains its HTTP retry policy if its JSON body stalls. A stalled 400 body cannot become a network retry. A stalled 429 body still uses Retry-After and permits the documented submit retry. Successful-header body timeouts preserve their observed status. Concurrent calls have independent attempt counts and envelopes.
+
+`npm run test:mutations` runs after the normal build/test commands and detects eight planted defects in retry policy, DID validation, Retry-After cap, attempt count, HTTP mapping, filter limit, submit endpoint and timeout status. Each mutant must be valid JavaScript and reach a failing assertion. Hosted CI covers Node 20 and 22 on Linux and Windows, with A7 enabled separately.

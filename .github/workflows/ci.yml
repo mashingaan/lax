@@ -9,10 +9,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         node-version: [20, 22]
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,4 +23,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: LAX_LIVE=1 node --test --test-name-pattern='A7' test/jobs.test.mjs
+      - run: npm run test:mutations
+      - run: node --test --test-name-pattern='A7' test/jobs.test.mjs
+        env:
+          LAX_LIVE: '1'

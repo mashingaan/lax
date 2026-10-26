@@ -14,7 +14,8 @@
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "test": "tsx smoke.test.ts && npm run build && node --test test/*.test.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:mutations": "node test/jobs-mutations.mjs"
   },
   "keywords": [
     "agent-discovery",

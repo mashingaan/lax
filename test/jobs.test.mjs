@@ -75,10 +75,41 @@ test('A4 reads retry 5xx and network failures, submits never do',async()=>{
  }
 })
 test('A4 timeout covers uncooperative fetch and slow body without hanging',async()=>{
- for(const fetch of [()=>new Promise(()=>{}),async()=>({ok:true,status:200,json:()=>new Promise(()=>{})})]) {
+ for(const [fetch,status] of [[()=>new Promise(()=>{}),0],[async()=>({ok:true,status:200,json:()=>new Promise(()=>{})}),200]]) {
   const c=createJobsClient({fetch,timeoutMs:10,retries:0})
-  await assert.rejects(c.getJob('id'),failure('network',0))
+  await assert.rejects(c.getJob('id'),failure('network',status))
  }
+})
+
+test('A2 received error status survives a body timeout and never retries 400',async()=>{
+ let calls=0
+ const c=createJobsClient({timeoutMs:5,fetch:async()=>{calls++
+  return {ok:false,status:400,headers:new Headers(),json:()=>new Promise(()=>{})}},sleep:async()=>assert.fail('400 cannot retry')})
+ await assert.rejects(c.getJob('id'),failure('bad_request',400))
+ assert.equal(calls,1)
+})
+test('A3 Retry-After and status survive an unreadable 429 response body',async()=>{
+ let calls=0
+ const delays=[]
+ const c=createJobsClient({timeoutMs:5,fetch:async()=>{
+  calls++
+  return calls===1?{ok:false,status:429,headers:new Headers({'Retry-After':'0.25'}),json:()=>new Promise(()=>{})}:json({submission})
+ },sleep:async ms=>delays.push(ms)})
+ assert.deepEqual(await c.submit('id',input),submission)
+ assert.equal(calls,2)
+ assert.deepEqual(delays,[250])
+})
+test('A4 concurrent calls keep retries, bodies and response errors independent',async()=>{
+ const counts=new Map()
+ const c=createJobsClient({fetch:async url=>{
+  const id=url.split('/').pop()
+  counts.set(id,(counts.get(id)??0)+1)
+  if(id==='slow'&&counts.get(id)===1) return json({error:'temporary'},503)
+  return json({job:{id}})
+ },sleep:async()=>{}})
+ assert.deepEqual((await Promise.all(['slow','fast'].map(id=>c.getJob(id)))).map(job=>job.id),['slow','fast'])
+ assert.equal(counts.get('slow'),2)
+ assert.equal(counts.get('fast'),1)
 })
 test('A5 invalid submit values are rejected without I/O',async()=>{
  for(const bad of [undefined,null,{...input,agent_did:''},{...input,agent_did:'did::x'},{...input,agent_did:'did:example:'},{...input,payout_address:'0xabc'},{...input,repo_or_patch_url:'http://example.com'},{...input,repo_or_patch_url:'not a url'}]) {
