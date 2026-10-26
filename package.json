@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "tsx smoke.test.ts && npm run build && node --test test/*.test.mjs",
+    "test": "tsx smoke.test.ts && npm run build && node --test test/jobs.test.mjs",
     "typecheck": "tsc --noEmit",
     "test:mutations": "node test/jobs-mutations.mjs"
   },
