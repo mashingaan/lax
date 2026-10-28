@@ -8,6 +8,17 @@ const input = {builder:'Agent',contact:'contact',agent_did:'did:example:agent',p
 const json = (body,status=200,headers={}) => new Response(JSON.stringify(body),{status,headers})
 const failure = (code,status) => error => error instanceof LaxJobsError && error.code===code && error.status===status
 
+test('A1 dot segment identifiers are rejected before any request',async()=>{
+ let calls=0
+ const client=createJobsClient({fetch:async()=>{calls++
+  return json({job,submission})}})
+ for(const id of ['.','..']) {
+  await assert.rejects(client.getJob(id),failure('invalid_input',0))
+  await assert.rejects(client.submit(id,input),failure('invalid_input',0))
+ }
+ assert.equal(calls,0)
+})
+
 test('A1 methods, encoding, filters, envelopes and JSON body',async()=>{
  const calls=[]
  const answers=[json({jobs:[job],count:1}),json({job}),json({submission},201)]
